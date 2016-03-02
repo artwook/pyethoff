@@ -1,3 +1,5 @@
+"""Prepare transaction on a network connected machine."""
+
 import json
 import argparse
 import base64

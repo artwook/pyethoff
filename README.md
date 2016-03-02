@@ -1,8 +1,10 @@
-# Python Ethereum Offline (pyethoff)
+# Python Ethereum Offline (pyethoff) 0.0.2
 
 Python version of a cold storage system for ethereum, like [Icebox](https://github.com/ConsenSys/icebox).
 Ledger HW1 is known to work but integration is far from perfect and is not user friendly at all.
 Everything is proposed as is, **use at your own risks** !
+
+Pull requests, help with documentation and reporting issues are all highly encouraged.
 
 ## Setup
 
