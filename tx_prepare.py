@@ -16,7 +16,11 @@ Attributes:
     tx_count (int): Number of previous transactions from sender wallet (nonce).
     gas_payload (dict): Request body when fetching gas from blockchain.
     gas_response (requests.Response): Response object for gas request.
-    tx_gasprice: Current gas price fetched from blockchain.
+    tx_gasprice (int): Current gas price fetched from blockchain.
+    tx (ethereum.transactions.Transaction): Object to build transaction.
+    tx_wei (bytes): Transaction ammount in wei.
+    tx_eth (bytes): Transaction ammount in eth.
+    tx_hex (bytes): Unsigned transaction in hex.
 """
 import argparse
 from decimal import Decimal
@@ -77,7 +81,6 @@ tx = Transaction(
     value=int(amount),
     data=''
 )
-tx_hex = '0x' + encode_hex(encode(tx))
 tx_wei = str_to_bytes(str(tx.value))
 tx_eth = str_to_bytes(str(Decimal(tx.value) / 10**18))
 
@@ -92,6 +95,7 @@ print('                Destination: Ox' + encode_hex(tx.to))
 print('======================================================')
 
 # Write unsigned transaction to file
+tx_hex = '0x' + encode_hex(encode(tx))
 open(args.output, 'w').write(tx_hex)
 print('Unsigned transaction saved as file: ' + args.output)
 print('Unsigned transaction is: ' + tx_hex)
