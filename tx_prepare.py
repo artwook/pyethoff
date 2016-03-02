@@ -3,7 +3,6 @@ import argparse
 import decimal
 
 import requests
-import json
 from ethereum import transactions as t
 from rlp.utils import decode_hex, encode_hex, str_to_bytes
 import rlp
