@@ -58,6 +58,11 @@ if args.keytype == 'file':
     pw = getpass()
     print("Applying hard key derivation function. Wait a little")
     k = decode_keystore_json(json, pw)
+
+    # Prepare a new transaction (decoded transaction seems immutable...)
+    tx = Transaction(
+        tx.nonce, tx.gasprice, tx.startgas, tx.to, tx.value, tx.data
+    )
     tx.sign(k)
 
 # Using Ledger HW1 in DEV mode (SIGNVERIFY_IMMEDIATE)
