@@ -7,7 +7,7 @@ It is the first script you need to run if you are creating a new transaction.
 
 Example:
     ::
-        $ python tx_prepare.py --ether 2.5 0xb794f5ea0ba39494ce839613fffba74279579268 0xb794f5ea0ba39494ce839613fffba74279579268
+        $ python tx_prepare.py --ether 2.5 <from> <to>
 
 Attributes:
     parser (argpase.ArgumentParser): Helper to provide CLI.
