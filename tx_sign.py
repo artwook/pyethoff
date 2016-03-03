@@ -1,15 +1,34 @@
-import json
+"""Sign a transaction (generated online) using your offline machine.
+
+This module enables you to sign a transaction created offline using tx_prepare
+it should be run on your offline machine (the one that has your keys on). You
+will then need to transfer this signed transaction back to your online machine.
+
+It is likely the second script you need to run if generating a new transaction.
+
+Example:
+    ::
+        $ python tx_sign.py <path to wallet> ethoff.tx
+
+Attributes:
+    parser (argpase.ArgumentParser): Helper to provide CLI.
+    tx_hex (bytes): Unsigned transaction in hex.
+    tx (ethereum.transactions.Transaction): Object to build signed transaction.
+    tx_wei (bytes): Transaction ammount in wei.
+    tx_eth (bytes): Transaction ammount in eth.
+    tx_hex_signed (bytes): Signed transaction in hex.
+"""
 import argparse
 import base64
-import decimal
+from decimal import Decimal
+from getpass import getpass
+import json
 
-from ethereum import transactions as t
-from ethereum import utils
+from ethereum.keys import decode_keystore_json
+from ethereum.transactions import Transaction, UnsignedTransaction
+from ethereum.utils import sha3
 from rlp.utils import decode_hex, encode_hex, str_to_bytes
-import rlp
-
-import getpass
-import ethereum.keys as keys
+from rlp import encode, decode
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--keytype', choices=['file', 'dongle'], default='file')
@@ -19,24 +38,26 @@ args = parser.parse_args()
 
 # Load unsigned transaction from file
 tx_hex = open(args.txfile).read()
-tx = rlp.decode(decode_hex(tx_hex[2:]), t.Transaction)
+tx = decode(decode_hex(tx_hex[2:]), Transaction)
+tx_wei = str_to_bytes(str(tx.value))
+tx_eth = str_to_bytes(str(Decimal(tx.value) / 10**18))
 
 # Output some transaction information
 print('======================================================')
 print('Unsigned transaction is: ' + tx_hex)
 print('======================================================')
-print('Transaction amount (in wei): ' + str_to_bytes(str(tx.value)))
-print('Transaction amount (in eth): ' + str_to_bytes(str(decimal.Decimal(tx.value)/10**18)))
-print('                Destination: Ox' + encode_hex(tx.to))
+print('Transaction amount (in wei): ' + tx_wei)
+print('Transaction amount (in eth): ' + tx_eth)
+print('              Destination: Ox' + encode_hex(tx.to))
 print('======================================================')
 
 # Using file wallet to sign transaction
 if args.keytype == 'file':
     json = json.loads(open(args.keyfile).read())
     print("Enter password of keyfile or ctrl+c to cancel")
-    pw = getpass.getpass()
+    pw = getpass()
     print("Applying hard key derivation function. Wait a little")
-    k = keys.decode_keystore_json(json, pw)
+    k = decode_keystore_json(json, pw)
     tx.sign(k)
 
 # Using Ledger HW1 in DEV mode (SIGNVERIFY_IMMEDIATE)
@@ -46,16 +67,16 @@ if args.keytype == 'dongle':
     dongle = getDongle(True)
     app = btchip(dongle)
     print("Enter pin of dongle or ctrl+c to cancel")
-    pin = getpass.getpass('Pin:')
+    pin = getpass('Pin:')
     app.verifyPin(pin)
 
     # Sign with dongle
-    rawhash = utils.sha3(rlp.encode(tx, t.UnsignedTransaction))
+    rawhash = sha3(encode(tx, UnsignedTransaction))
     signature = app.signImmediate(bytearray(decode_hex(args.keyfile)), rawhash)
 
     # ASN.1 Decoding inspired from electrum
     rLength = signature[3]
-    r = signature[4 : 4 + rLength]
+    r = signature[4: 4 + rLength]
     sLength = signature[4 + rLength + 1]
     s = signature[4 + rLength + 2:]
     if rLength == 33:
@@ -70,12 +91,14 @@ if args.keytype == 'dongle':
     v, r, s = bitcoin_decode_sig(sig)
 
     # Build new transaction with valid sig
-    tx = t.Transaction(tx.nonce, tx.gasprice, tx.startgas, tx.to, tx.value, tx.data, v, r, s)
+    tx = Transaction(
+        tx.nonce, tx.gasprice, tx.startgas, tx.to, tx.value, tx.data, v, r, s
+    )
 
-tx_hex = '0x' + encode_hex(rlp.encode(tx))
-open(args.txfile + ".signed", 'w').write(tx_hex)
+tx_hex_signed = '0x' + encode_hex(encode(tx))
+open(args.txfile + ".signed", 'w').write(tx_hex_signed)
 print('======================================================')
-print('Signed transaction is: ' + tx_hex)
+print('Signed transaction is: ' + tx_hex_signed)
 print('Signed transaction saved as file: ' + args.txfile + ".signed")
 print('Transaction signed by: 0x' + encode_hex(tx.sender))
 print('======================================================')

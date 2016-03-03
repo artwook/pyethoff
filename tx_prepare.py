@@ -1,12 +1,35 @@
-import json
-import argparse
-import decimal
+"""Prepare an ethereum transaction on a network connected machine.
 
-import requests
+This module enables you to create a transaction that can then be transferred
+to an offline machine which has your ethereum wallet safely stored offline.
+
+It is the first script you need to run if you are creating a new transaction.
+
+Example:
+    ::
+        $ python tx_prepare.py --ether 2.5 <from> <to>
+
+Attributes:
+    parser (argpase.ArgumentParser): Helper to provide CLI.
+    nonce_payload (dict): Request body when fetching nonce from blockchain.
+    nonce_response (requests.Response): Response object for nonce request.
+    tx_count (int): Number of previous transactions from sender wallet (nonce).
+    gas_payload (dict): Request body when fetching gas from blockchain.
+    gas_response (requests.Response): Response object for gas request.
+    tx_gasprice (int): Current gas price fetched from blockchain.
+    tx (ethereum.transactions.Transaction): Object to build transaction.
+    tx_wei (bytes): Transaction ammount in wei.
+    tx_eth (bytes): Transaction ammount in eth.
+    tx_hex (bytes): Unsigned transaction in hex.
+"""
+import argparse
+from decimal import Decimal
 import json
-from ethereum import transactions as t
+
+from ethereum.transactions import Transaction
+import requests
+from rlp import encode
 from rlp.utils import decode_hex, encode_hex, str_to_bytes
-import rlp
 
 parser = argparse.ArgumentParser()
 parser.add_argument('amount')
@@ -18,33 +41,61 @@ parser.add_argument('--ether', default=False, action='store_true')
 args = parser.parse_args()
 
 # Fetch nonce from the blockchain
-r = requests.post(args.geth_rpc,data='{"jsonrpc":"2.0","method":"eth_getTransactionCount","params":["' + args.from_addr + '","latest"],"id":1}')
-tx_count = int(r.json()[u'result'], 16)
+nonce_payload = {
+    'jsonrpc': '2.0',
+    'method': 'eth_getTransactionCount',
+    'params': [args.from_addr, 'latest'],
+    'id': 1
+}
+nonce_response = requests.post(
+    args.geth_rpc,
+    data=json.dumps(nonce_payload)
+)
+
+tx_count = int(nonce_response.json()[u'result'], 16)
 
 # Fetch gasprice from the blockchain
-r = requests.post(args.geth_rpc,data='{"jsonrpc":"2.0","method":"eth_gasPrice","params":[],"id":73}')
-tx_gasprice = int(r.json()[u'result'], 16)
+gas_payload = {
+    'jsonrpc': '2.0',
+    'method': 'eth_gasPrice',
+    'params': [],
+    'id': 73
+}
+gas_response = requests.post(
+    args.geth_rpc,
+    data=json.dumps(gas_payload)
+)
+tx_gasprice = int(gas_response.json()[u'result'], 16)
 
 if args.ether:
-    amount = decimal.Decimal(args.amount) * 10**18
+    amount = Decimal(args.amount) * 10**18
 else:
-    amount = decimal.Decimal(args.amount)
+    amount = Decimal(args.amount)
 
 # Creation transaction, value in wei
-tx = t.Transaction(nonce=tx_count, gasprice=tx_gasprice, startgas=21000, to=decode_hex(args.to_addr[2:]), value=int(amount), data='')
-tx_hex = '0x' + encode_hex(rlp.encode(tx))
+tx = Transaction(
+    nonce=tx_count,
+    gasprice=tx_gasprice,
+    startgas=21000,
+    to=decode_hex(args.to_addr[2:]),
+    value=int(amount),
+    data=''
+)
+tx_wei = str_to_bytes(str(tx.value))
+tx_eth = str_to_bytes(str(Decimal(tx.value) / 10**18))
 
 # Output some transaction information
 print('======================================================')
 print('                  Gas Price: ' + str(tx_gasprice))
-print('Transaction amount (in wei): ' + str_to_bytes(str(tx.value)))
-print('Transaction amount (in eth): ' + str_to_bytes(str(decimal.Decimal(tx.value)/10**18)))
+print('Transaction amount (in wei): ' + tx_wei)
+print('Transaction amount (in eth): ' + tx_eth)
 print('                       From: ' + args.from_addr)
 print('                 From Nonce: ' + str(tx_count))
 print('                Destination: Ox' + encode_hex(tx.to))
 print('======================================================')
 
 # Write unsigned transaction to file
+tx_hex = '0x' + encode_hex(encode(tx))
 open(args.output, 'w').write(tx_hex)
 print('Unsigned transaction saved as file: ' + args.output)
 print('Unsigned transaction is: ' + tx_hex)
