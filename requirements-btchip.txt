@@ -1,1 +1,2 @@
 git+https://github.com/LedgerHQ/btchip-python.git@fe292218e1c9c4939071650c729770bb6b34aa1b
+ecdsa
