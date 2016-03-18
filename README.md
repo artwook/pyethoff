@@ -19,24 +19,18 @@ virtualenv -p python2 pyvenv
 Install pyethereum and python-requests:
 ```
 . pyvenv/bin/activate
-git clone https://github.com/ethereum/pyethereum.git
-cd pyethereum
-python setup.py install
-pip install pbkdf2 pycrypto scrypt requests
+pip install -r requirements.txt
 ```
 
 Optionaly, to sign with Ledger wallet (**dongle in DEV mode only**) install btchip-python:
 ```
 . pyvenv/bin/activate
-pip install hidapi pyscard ecdsa
-git clone https://github.com/LedgerHQ/btchip-python.git
-cd btchip-python
-python setup.py install
+pip install -r requirements-btchip.txt
 ```
 
 ### Offline computer setup
 
-On the offline computer, which sould **NEVER** be connected to internet, copy the direcory pyvenv and file `tx_sign.py`.
+On the offline computer, which should **NEVER** be connected to internet, copy the direcory pyvenv and file `tx_sign.py`. It is important that the path to pyenv remains the same. Expect a better deploy process using python wheels in a future version.
 
 To generate a new file based wallet on the offline computer:
 
