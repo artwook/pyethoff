@@ -42,13 +42,23 @@ tx = decode(decode_hex(tx_hex[2:]), Transaction)
 tx_wei = str_to_bytes(str(tx.value))
 tx_eth = str_to_bytes(str(Decimal(tx.value) / 10**18))
 
+if tx.data: 
+    tx_data = '0x' + encode_hex(tx.data)
+else:
+    tx_data = ''
+
+
 # Output some transaction information
 print('======================================================')
 print('Unsigned transaction is: ' + tx_hex)
 print('======================================================')
+print('                        Gas: ' + str(tx.startgas))
+print('                  Gas Price: ' + str(tx.gasprice))
 print('Transaction amount (in wei): ' + tx_wei)
 print('Transaction amount (in eth): ' + tx_eth)
-print('              Destination: Ox' + encode_hex(tx.to))
+print('                 From Nonce: ' + str(tx.nonce))
+print('                 To Address: 0x' + encode_hex(tx.to))
+print('           Transaction Data: ' + tx_data)
 print('======================================================')
 
 # Using file wallet to sign transaction

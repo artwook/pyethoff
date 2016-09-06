@@ -92,12 +92,14 @@ tx_eth = str_to_bytes(str(Decimal(tx.value) / 10**18))
 
 # Output some transaction information
 print('======================================================')
+print('                        Gas: ' + str(args.gas))
 print('                  Gas Price: ' + str(tx_gasprice))
 print('Transaction amount (in wei): ' + tx_wei)
 print('Transaction amount (in eth): ' + tx_eth)
-print('                       From: ' + args.from_addr)
+print('               From Address: ' + args.from_addr)
 print('                 From Nonce: ' + str(tx_count))
-print('                Destination: Ox' + encode_hex(tx.to))
+print('                 To Address: 0x' + encode_hex(tx.to))
+print('           Transaction Data: ' + args.data)
 print('======================================================')
 
 # Write unsigned transaction to file
