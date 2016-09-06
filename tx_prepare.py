@@ -38,21 +38,27 @@ parser.add_argument('to_addr')
 parser.add_argument('--geth_rpc', default="http://localhost:8545")
 parser.add_argument('--output', default="ethoff.tx")
 parser.add_argument('--ether', default=False, action='store_true')
+parser.add_argument('--nonce', default=-1, type=int)
+parser.add_argument('--gas', default=21000, type=int)
+parser.add_argument('--data', default='')
 args = parser.parse_args()
 
 # Fetch nonce from the blockchain
-nonce_payload = {
-    'jsonrpc': '2.0',
-    'method': 'eth_getTransactionCount',
-    'params': [args.from_addr, 'latest'],
-    'id': 1
-}
-nonce_response = requests.post(
-    args.geth_rpc,
-    data=json.dumps(nonce_payload)
-)
+if args.nonce < 0:
+    nonce_payload = {
+        'jsonrpc': '2.0',
+        'method': 'eth_getTransactionCount',
+        'params': [args.from_addr, 'latest'],
+        'id': 1
+    }
+    nonce_response = requests.post(
+        args.geth_rpc,
+        data=json.dumps(nonce_payload)
+    )
 
-tx_count = int(nonce_response.json()[u'result'], 16)
+    tx_count = int(nonce_response.json()[u'result'], 16)
+else:
+    tx_count = args.nonce
 
 # Fetch gasprice from the blockchain
 gas_payload = {
@@ -76,10 +82,10 @@ else:
 tx = Transaction(
     nonce=tx_count,
     gasprice=tx_gasprice,
-    startgas=21000,
+    startgas=args.gas,
     to=decode_hex(args.to_addr[2:]),
     value=int(amount),
-    data=''
+    data=decode_hex(args.data[2:])
 )
 tx_wei = str_to_bytes(str(tx.value))
 tx_eth = str_to_bytes(str(Decimal(tx.value) / 10**18))
