@@ -1,4 +1,4 @@
-pyethereum
 pyvenv
 *.tx
 *.tx.signed
+*.json
