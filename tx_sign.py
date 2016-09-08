@@ -1,4 +1,5 @@
-"""Sign a transaction (generated online) using your offline machine.
+"""
+Sign a transaction (generated online) using your offline machine.
 
 This module enables you to sign a transaction created offline using tx_prepare
 it should be run on your offline machine (the one that has your keys on). You
@@ -10,25 +11,18 @@ Example:
     ::
         $ python tx_sign.py <path to wallet> ethoff.tx
 
-Attributes:
-    parser (argpase.ArgumentParser): Helper to provide CLI.
-    tx_hex (bytes): Unsigned transaction in hex.
-    tx (ethereum.transactions.Transaction): Object to build signed transaction.
-    tx_wei (bytes): Transaction ammount in wei.
-    tx_eth (bytes): Transaction ammount in eth.
-    tx_hex_signed (bytes): Signed transaction in hex.
 """
 import argparse
 import base64
-from decimal import Decimal
 from getpass import getpass
 import json
 
 from ethereum.keys import decode_keystore_json
 from ethereum.transactions import Transaction, UnsignedTransaction
 from ethereum.utils import sha3
-from rlp.utils import decode_hex, encode_hex, str_to_bytes
+from rlp.utils import decode_hex
 from rlp import encode, decode
+from web3 import Web3
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--keytype', choices=['file', 'dongle'], default='file')
@@ -36,17 +30,11 @@ parser.add_argument('keyfile')
 parser.add_argument('txfile')
 args = parser.parse_args()
 
+web3 = Web3(None) # web3 init without provider
+
 # Load unsigned transaction from file
 tx_hex = open(args.txfile).read()
 tx = decode(decode_hex(tx_hex[2:]), Transaction)
-tx_wei = str_to_bytes(str(tx.value))
-tx_eth = str_to_bytes(str(Decimal(tx.value) / 10**18))
-
-if tx.data: 
-    tx_data = '0x' + encode_hex(tx.data)
-else:
-    tx_data = ''
-
 
 # Output some transaction information
 print('======================================================')
@@ -54,11 +42,11 @@ print('Unsigned transaction is: ' + tx_hex)
 print('======================================================')
 print('                        Gas: ' + str(tx.startgas))
 print('                  Gas Price: ' + str(tx.gasprice))
-print('Transaction amount (in wei): ' + tx_wei)
-print('Transaction amount (in eth): ' + tx_eth)
+print('Transaction amount (in wei): ' + str(tx.value))
+print('Transaction amount (in eth): ' + str(web3.fromWei(tx.value, 'ether')))
 print('                 From Nonce: ' + str(tx.nonce))
-print('                 To Address: 0x' + encode_hex(tx.to))
-print('           Transaction Data: ' + tx_data)
+print('                 To Address: ' + web3.toHex(tx.to))
+print('           Transaction Data: ' + web3.toHex(tx.data))
 print('======================================================')
 
 # Using file wallet to sign transaction
@@ -110,10 +98,10 @@ if args.keytype == 'dongle':
         tx.nonce, tx.gasprice, tx.startgas, tx.to, tx.value, tx.data, v, r, s
     )
 
-tx_hex_signed = '0x' + encode_hex(encode(tx))
+tx_hex_signed = web3.toHex(encode(tx))
 open(args.txfile + ".signed", 'w').write(tx_hex_signed)
 print('======================================================')
 print('Signed transaction is: ' + tx_hex_signed)
 print('Signed transaction saved as file: ' + args.txfile + ".signed")
-print('Transaction signed by: 0x' + encode_hex(tx.sender))
+print('Transaction signed by: ' + web3.toHex(tx.sender))
 print('======================================================')
