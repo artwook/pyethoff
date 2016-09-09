@@ -47,10 +47,14 @@ else:
 # Fetch gasprice from the blockchain
 tx_gasprice = web3.eth.gasPrice
 
-if args.ether:
-    amount = web3.toWei(args.amount, 'ether')
+# Check if amount is max
+if args.amount == 'max':
+    amount = web3.eth.getBalance(args.from_addr)
 else:
-    amount = args.amount
+    if args.ether:
+        amount = web3.toWei(args.amount, 'ether')
+    else:
+        amount = args.amount
 
 # Estimate startgas if necessary
 if args.gas:
@@ -64,6 +68,10 @@ elif args.data != '' :
     })
 else:
     tx_startgas = 21000
+
+# If amount is max, deduce transaction fee
+if args.amount == 'max':
+    amount -= tx_gasprice * tx_startgas
 
 # Create transaction, value in wei
 tx = Transaction(
