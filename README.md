@@ -1,4 +1,4 @@
-# Python Ethereum Offline (pyethoff) 0.0.2
+# Python Ethereum Offline (pyethoff)
 
 Python version of a cold storage system for ethereum, like [Icebox](https://github.com/ConsenSys/icebox).
 Ledger HW1 is known to work but integration is far from perfect and is not user friendly at all.
@@ -9,36 +9,51 @@ Pull requests, help with documentation and reporting issues are all highly encou
 ## Setup
 
 ### pyvenv setup
-The setup is based around a python2 virtualenv directory named pyvenv.
-
+The setup is based around a python3 virtualenv directory named pyvenv:
 ```
-virtualenv -p python2 pyvenv
+virtualenv -p python3 pyvenv
 . pyvenv/bin/activate
 ```
 
-Install pyethereum and python-requests:
+Install requirements:
 ```
 . pyvenv/bin/activate
 pip install -r requirements.txt
-```
-
-Optionaly, to sign with Ledger wallet (**dongle in DEV mode only**) install btchip-python:
-```
-. pyvenv/bin/activate
-pip install -r requirements-btchip.txt
 ```
 
 ### Offline computer setup
 
 On the offline computer, which should **NEVER** be connected to internet, copy the direcory pyvenv and file `tx_sign.py`. It is important that the path to pyenv remains the same. Expect a better deploy process using python wheels in a future version.
 
-To generate a new file based wallet on the offline computer:
+## Workflow to sign a transaction offline
 
+On online computer with geth rpc running, prepare the transaction:
 ```
 . pyvenv/bin/activate
-python pyethereum/tools/keystorer.py create
+python tx_prepare.py --ether 2.5 0xb794f5ea0ba39494ce839613fffba74279579268 0xb794f5ea0ba39494ce839613fffba74279579268
 ```
 
+On offline computer transfert `ethoff.tx` and sign the transaction:
+```
+. pyvenv/bin/activate
+python tx_sign.py <path to wallet> ethoff.tx
+```
+
+Back on online computer with `ethoff.tx.signed`, push the transaction:
+```
+. pyvenv/bin/activate
+python tx_push.py ethoff.tx.signed
+```
+## Leger HW1
+
+### pyvenv setup
+To sign with Ledger wallet (**dongle in DEV mode only**) install btchip-python:
+```
+. pyvenv/bin/activate
+pip install -r requirements-btchip.txt
+```
+
+### HW1 setup
 To store a private key onto the ledger wallet (the tests I made were with a HW1), dongle has first to be setup in developper mode:
 
 ```
@@ -80,21 +95,8 @@ Where the private key 'f0b81be749f9260e9f4271e7f678e0e60108e5afcc00c4c5d8fed27bd
 python pyethereum/tools/keystorer.py getprivkey 341d0b23-b54b-dc77-0458-5bc9896a835c.json
 ```
 
+### Signature
 To then use the private key from the dongle to sign hash, the private key ID displayed as a return result after the importPrivateKey (01010019f88b564517a8ed6120d6551e380a00d6d7154619fd4fbb7c76c06d45254a1b) has to be provided **everytime**. It's inconvenient but I have not found a workaround ...
-
-## Workflow to sign a transaction offline
-
-On online computer with geth rpc running, prepare the transaction:
-```
-. pyvenv/bin/activate
-python tx_prepare.py --ether 2.5 0xb794f5ea0ba39494ce839613fffba74279579268 0xb794f5ea0ba39494ce839613fffba74279579268
-```
-
-On offline computer transfert `ethoff.tx` and sign the transaction:
-```
-. pyvenv/bin/activate
-python tx_sign.py <path to wallet> ethoff.tx
-```
 
 To sign with ledger wallet use --keytype option with the previously obtained private key ID (from the importPrivateKey):
 ```
@@ -102,10 +104,3 @@ To sign with ledger wallet use --keytype option with the previously obtained pri
 python tx_sign.py --keytype dongle 01010019f88b564517a8ed6120d6551e380a00d6d7154619fd4fbb7c76c06d45254a1b ethoff.tx
 ```
 
-Back on online computer with `ethoff.tx.signed`, push the transaction:
-```
-. pyvenv/bin/activate
-python tx_push.py ethoff.tx.signed
-```
-
-Copy and past curl instruction to push signed transaction to live network via geth rpc.
