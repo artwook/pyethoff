@@ -26,7 +26,7 @@ parser.add_argument('--port', default="8545")
 parser.add_argument('--output', default="ethoff.tx")
 parser.add_argument('--ether', default=False, action='store_true')
 parser.add_argument('--nonce', default=-1, type=int)
-parser.add_argument('--gas', default=21000, type=int)
+parser.add_argument('--gas', type=int)
 parser.add_argument('--data', default='')
 args = parser.parse_args()
 
@@ -52,11 +52,24 @@ if args.ether:
 else:
     amount = args.amount
 
+# Estimate startgas if necessary
+if args.gas:
+    tx_startgas = args.gas
+elif args.data != '' :
+    tx_startgas = web3.eth.estimateGas({
+        'to': args.to_addr,
+        'from': args.from_addr,
+        'value': amount,
+        'data': args.data,
+    })
+else:
+    tx_startgas = 21000
+
 # Create transaction, value in wei
 tx = Transaction(
     nonce=tx_count,
     gasprice=tx_gasprice,
-    startgas=args.gas,
+    startgas=tx_startgas,
     to=web3.toAscii(args.to_addr),
     value=int(amount),
     data=web3.toAscii(args.data)
