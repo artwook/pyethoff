@@ -44,7 +44,7 @@ Back on online computer with `ethoff.tx.signed`, push the transaction:
 . pyvenv/bin/activate
 python tx_push.py ethoff.tx.signed
 ```
-## Leger HW1
+## Ledger HW1
 
 ### pyvenv setup
 To sign with Ledger wallet (**dongle in DEV mode only**) install btchip-python:
@@ -104,3 +104,31 @@ To sign with ledger wallet use --keytype option with the previously obtained pri
 python tx_sign.py --keytype dongle 01010019f88b564517a8ed6120d6551e380a00d6d7154619fd4fbb7c76c06d45254a1b ethoff.tx
 ```
 
+## Ledger Nano S
+
+### pyvenv setup
+To sign with Ledger Nano S wallet install blue-loader-python (fork of the original to support python3):
+```
+. pyvenv/bin/activate
+pip install -r requirements-nanos.txt
+```
+
+### Workflow
+
+On online computer with geth rpc running, prepare the transaction:
+```
+. pyvenv/bin/activate
+python tx_prepare.py --keytype nanos max "44'/60'/0'/0" 0xb794f5ea0ba39494ce839613fffba74279579268
+```
+
+On offline computer transfert `ethoff.tx` and sign the transaction:
+```
+. pyvenv/bin/activate
+python tx_sign.py --keytype nanos "44'/60'/0'/0" ethoff.tx
+```
+
+Back on online computer with `ethoff.tx.signed`, push the transaction:
+```
+. pyvenv/bin/activate
+python tx_push.py ethoff.tx.signed
+```

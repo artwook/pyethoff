@@ -10,6 +10,8 @@ It is likely the second script you need to run if generating a new transaction.
 Example:
     ::
         $ python tx_sign.py <path to wallet> ethoff.tx
+        $ python tx_sign.py --keytype nanos "44'/60'/0'/0" ethoff.tx
+        $ python tx_sign.py --keytype nanos "44'/60'/160720'/0'/0" ethoff.tx
 
 """
 import argparse
@@ -25,7 +27,7 @@ from rlp import encode, decode
 from web3 import Web3
 
 parser = argparse.ArgumentParser()
-parser.add_argument('--keytype', choices=['file', 'dongle'], default='file')
+parser.add_argument('--keytype', choices=['file', 'dongle', 'nanos'], default='file')
 parser.add_argument('keyfile')
 parser.add_argument('txfile')
 args = parser.parse_args()
@@ -92,6 +94,42 @@ if args.keytype == 'dongle':
 
     # Retrieve VRS from sig
     v, r, s = bitcoin_decode_sig(sig)
+
+    # Build new transaction with valid sig
+    tx = Transaction(
+        tx.nonce, tx.gasprice, tx.startgas, tx.to, tx.value, tx.data, v, r, s
+    )
+
+# Using Ledger Nano S
+if args.keytype == 'nanos':
+    #TODO
+    from ledgerblue.comm import getDongle
+    import struct
+
+    path = args.keyfile
+    donglePath = b''
+    for pathElement in path.split('/'):
+        element = pathElement.split('\'')
+        if len(element) == 1:
+            donglePath += struct.pack(">I", int(element[0]))
+        else:
+            donglePath += struct.pack(">I", 0x80000000 | int(element[0]))
+
+    encodedTx = encode(tx, UnsignedTransaction)
+
+    apdu =  bytes.fromhex('e0040000')
+    apdu += bytes([len(donglePath) + 1 + len(encodedTx)])
+    apdu += bytes([len(donglePath) // 4])
+    apdu += donglePath
+    apdu += encodedTx
+
+    # Sign with dongle
+    result = getDongle(True).exchange(apdu, timeout=60)
+
+    # Retrieve VRS from sig
+    v = result[0]
+    r = int.from_bytes(result[1:1 + 32], 'big')
+    s = int.from_bytes(result[1 + 32: 1 + 32 + 32], 'big')
 
     # Build new transaction with valid sig
     tx = Transaction(

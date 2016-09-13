@@ -1,0 +1,1 @@
+git+https://github.com/bargst/blue-loader-python.git
